@@ -16,6 +16,15 @@
 
 package com.google.maps.android.clustering.algo;
 
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterItem;
+import com.google.maps.android.geometry.Bounds;
+import com.google.maps.android.geometry.Point;
+import com.google.maps.android.projection.SphericalMercatorProjection;
+import com.google.maps.android.quadtree.PointQuadTree;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,14 +33,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.android.gms.maps.model.LatLng;
-import com.google.maps.android.clustering.Cluster;
-import com.google.maps.android.clustering.ClusterItem;
-import com.google.maps.android.geometry.Bounds;
-import com.google.maps.android.geometry.Point;
-import com.google.maps.android.projection.SphericalMercatorProjection;
-import com.google.maps.android.quadtree.PointQuadTree;
 
 /**
  * A simple clustering algorithm with O(nlog n) performance. Resulting clusters are not
@@ -47,6 +48,8 @@ import com.google.maps.android.quadtree.PointQuadTree;
  * Clusters have the center of the first element (not the centroid of the items within it).
  */
 public class NonHierarchicalDistanceBasedAlgorithm<T extends ClusterItem> implements Algorithm<T> {
+    private LatLngBounds mVisibleBounds;
+
     public static final int MAX_DISTANCE_AT_ZOOM = 100; // essentially 100 dp.
 
     /**
@@ -114,6 +117,10 @@ public class NonHierarchicalDistanceBasedAlgorithm<T extends ClusterItem> implem
                     continue;
                 }
 
+                if (mVisibleBounds != null && ! mVisibleBounds.contains(candidate.getPosition())) {
+                    continue;
+                }
+
                 Bounds searchBounds = createBoundsFromSpan(candidate.getPoint(), zoomSpecificSpan);
                 Collection<QuadItem<T>> clusterItems;
                 clusterItems = mQuadTree.search(searchBounds);
@@ -157,6 +164,10 @@ public class NonHierarchicalDistanceBasedAlgorithm<T extends ClusterItem> implem
             }
         }
         return items;
+    }
+
+    public void setVisibleBounds(LatLngBounds bounds) {
+        mVisibleBounds = bounds;
     }
 
     private double distanceSquared(Point a, Point b) {

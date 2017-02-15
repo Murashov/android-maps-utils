@@ -26,7 +26,6 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.maps.android.MarkerManager;
 import com.google.maps.android.clustering.algo.Algorithm;
 import com.google.maps.android.clustering.algo.NonHierarchicalDistanceBasedAlgorithm;
-import com.google.maps.android.clustering.algo.PreCachingAlgorithmDecorator;
 import com.google.maps.android.clustering.view.ClusterRenderer;
 import com.google.maps.android.clustering.view.DefaultClusterRenderer;
 
@@ -74,7 +73,7 @@ public class ClusterManager<T extends ClusterItem> implements
         mClusterMarkers = markerManager.newCollection();
         mMarkers = markerManager.newCollection();
         mRenderer = new DefaultClusterRenderer<T>(context, map, this);
-        mAlgorithm = new PreCachingAlgorithmDecorator<T>(new NonHierarchicalDistanceBasedAlgorithm<T>());
+        mAlgorithm = new NonHierarchicalDistanceBasedAlgorithm<T>();
         mClusterTask = new ClusterTask();
         mRenderer.onAdd();
     }
@@ -112,7 +111,7 @@ public class ClusterManager<T extends ClusterItem> implements
             if (mAlgorithm != null) {
                 algorithm.addItems(mAlgorithm.getItems());
             }
-            mAlgorithm = new PreCachingAlgorithmDecorator<T>(algorithm);
+            mAlgorithm = algorithm;
         } finally {
             mAlgorithmLock.writeLock().unlock();
         }
@@ -195,13 +194,6 @@ public class ClusterManager<T extends ClusterItem> implements
         if (mRenderer instanceof GoogleMap.OnCameraIdleListener) {
             ((GoogleMap.OnCameraIdleListener) mRenderer).onCameraIdle();
         }
-
-        // Don't re-compute clusters if the map has just been panned/tilted/rotated.
-        CameraPosition position = mMap.getCameraPosition();
-        if (mPreviousCameraPosition != null && mPreviousCameraPosition.zoom == position.zoom) {
-            return;
-        }
-        mPreviousCameraPosition = mMap.getCameraPosition();
 
         cluster();
     }
